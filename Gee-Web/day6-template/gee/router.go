@@ -5,15 +5,10 @@ import (
 	"strings"
 )
 
-// 使用 roots 来存储每种请求方式的Trie 树根节点。
-// 使用 handlers 存储每种请求方式的 HandlerFunc
 type router struct {
 	roots    map[string]*node
 	handlers map[string]HandlerFunc
 }
-
-// roots key eg, roots['GET'] roots['POST']  根据方法构建
-// handlers key eg, handlers['GET-/p/:lang/doc'], handlers['POST-/p/book']
 
 func newRouter() *router {
 	return &router{
@@ -38,13 +33,11 @@ func parsePattern(pattern string) []string {
 	return parts
 }
 
-// 注册路由
 func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
 	parts := parsePattern(pattern)
 
 	key := method + "-" + pattern
 	_, ok := r.roots[method]
-	// 如果当前方法没有根 新建一个
 	if !ok {
 		r.roots[method] = &node{}
 	}
@@ -52,7 +45,6 @@ func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
 	r.handlers[key] = handler
 }
 
-// getRoute 函数中，解析了:和*两种匹配符的参数，返回一个 map
 func (r *router) getRoute(method string, path string) (*node, map[string]string) {
 	searchParts := parsePattern(path)
 	params := make(map[string]string)
@@ -93,11 +85,15 @@ func (r *router) getRoutes(method string) []*node {
 
 func (r *router) handle(c *Context) {
 	n, params := r.getRoute(c.Method, c.Path)
+
 	if n != nil {
-		c.Params = params
 		key := c.Method + "-" + n.pattern
-		r.handlers[key](c)
+		c.Params = params
+		c.handlers = append(c.handlers, r.handlers[key])
 	} else {
-		c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
+		c.handlers = append(c.handlers, func(c *Context) {
+			c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
+		})
 	}
+	c.Next()
 }

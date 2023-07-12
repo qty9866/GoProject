@@ -6,19 +6,17 @@ import (
 )
 
 type node struct {
-	pattern  string  // 待匹配路由，例如 /p/:lang
-	part     string  // 路由中的一部分，例如 :lang
-	children []*node // 子节点，例如 [doc, tutorial, intro]
-	isWild   bool    // 是否精确匹配，part 含有 : 或 * 时为true
+	pattern  string
+	part     string
+	children []*node
+	isWild   bool
 }
 
 func (n *node) String() string {
 	return fmt.Sprintf("node{pattern=%s, part=%s, isWild=%t}", n.pattern, n.part, n.isWild)
 }
 
-// 递归查找每一层节点，如果没有匹配到当前part节点 则新建一个
 func (n *node) insert(pattern string, parts []string, height int) {
-	// 递归的出口
 	if len(parts) == height {
 		n.pattern = pattern
 		return
@@ -40,6 +38,7 @@ func (n *node) search(parts []string, height int) *node {
 		}
 		return n
 	}
+
 	part := parts[height]
 	children := n.matchChildren(part)
 
@@ -49,10 +48,11 @@ func (n *node) search(parts []string, height int) *node {
 			return result
 		}
 	}
+
 	return nil
 }
 
-func (n *node) travel(list *[]*node) {
+func (n *node) travel(list *([]*node)) {
 	if n.pattern != "" {
 		*list = append(*list, n)
 	}
@@ -61,7 +61,6 @@ func (n *node) travel(list *[]*node) {
 	}
 }
 
-// 第一个匹配成功的节点 用于插入
 func (n *node) matchChild(part string) *node {
 	for _, child := range n.children {
 		if child.part == part || child.isWild {
@@ -71,7 +70,6 @@ func (n *node) matchChild(part string) *node {
 	return nil
 }
 
-// 所有匹配成功的节点，用于查找
 func (n *node) matchChildren(part string) []*node {
 	nodes := make([]*node, 0)
 	for _, child := range n.children {
