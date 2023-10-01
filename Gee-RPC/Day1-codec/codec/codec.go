@@ -1,9 +1,6 @@
 package codec
 
 import (
-	"bufio"
-	"encoding/gob"
-	"encoding/json"
 	"io"
 )
 
@@ -41,35 +38,4 @@ func init() {
 	NewCodeFuncMap = make(map[Type]NewCodeFunc)
 	NewCodeFuncMap[GobType] = NewGobCodec
 	NewCodeFuncMap[JsonType] = NewJsonCodec
-}
-
-// GobCodec buf 是为了防止阻塞而创建的带缓冲的 `Writer`，一般这么做能提升性能。
-type GobCodec struct {
-	conn io.ReadWriteCloser
-	buf  *bufio.Writer
-	dec  *gob.Decoder
-	enc  *gob.Encoder
-}
-
-type JsonCodec struct {
-	conn io.ReadWriteCloser
-	buf  *bufio.Writer
-	dec  *json.Decoder
-	enc  *json.Encoder
-}
-
-var _ Codec = (*GobCodec)(nil)
-
-func NewGobCodec(conn io.ReadWriteCloser) Codec {
-	buf := bufio.NewWriter(conn)
-	return &GobCodec{
-		conn: conn,
-		buf:  buf,
-		dec:  gob.NewDecoder(conn),
-		enc:  gob.NewEncoder(buf),
-	}
-}
-
-func (c *GobCodec) ReadHeader(h *Header) error {
-	return c.dec.Decode(h)
 }
