@@ -2,40 +2,40 @@ package codec
 
 import (
 	"bufio"
-	"encoding/json"
+	"encoding/gob"
 	"io"
 	"log"
 )
 
-// JsonCodec buf 是为了防止阻塞而创建的带缓冲的 `Writer`，一般这么做能提升性能。
-type JsonCodec struct {
+// GobCodec buf 是为了防止阻塞而创建的带缓冲的 `Writer`，一般这么做能提升性能。
+type GobCodec struct {
 	conn io.ReadWriteCloser
 	buf  *bufio.Writer
-	dec  *json.Decoder
-	enc  *json.Encoder
+	dec  *gob.Decoder
+	enc  *gob.Encoder
 }
 
 var _ Codec = (*GobCodec)(nil)
 
-func NewJsonCodec(conn io.ReadWriteCloser) Codec {
+func NewGobCodec(conn io.ReadWriteCloser) Codec {
 	buf := bufio.NewWriter(conn)
-	return &JsonCodec{
+	return &GobCodec{
 		conn: conn,
 		buf:  buf,
-		dec:  json.NewDecoder(conn),
-		enc:  json.NewEncoder(buf),
+		dec:  gob.NewDecoder(conn),
+		enc:  gob.NewEncoder(buf),
 	}
 }
 
-func (c *JsonCodec) ReadHeader(h *Header) error {
+func (c *GobCodec) ReadHeader(h *Header) error {
 	return c.dec.Decode(h)
 }
 
-func (c *JsonCodec) ReadBody(body interface{}) error {
+func (c *GobCodec) ReadBody(body interface{}) error {
 	return c.dec.Decode(body)
 }
 
-func (c *JsonCodec) Write(h *Header, body interface{}) (err error) {
+func (c *GobCodec) Write(h *Header, body interface{}) (err error) {
 	defer func() {
 		_ = c.buf.Flush()
 		if err != nil {
@@ -53,6 +53,6 @@ func (c *JsonCodec) Write(h *Header, body interface{}) (err error) {
 	return nil
 }
 
-func (c *JsonCodec) Close() error {
+func (c *GobCodec) Close() error {
 	return c.conn.Close()
 }
